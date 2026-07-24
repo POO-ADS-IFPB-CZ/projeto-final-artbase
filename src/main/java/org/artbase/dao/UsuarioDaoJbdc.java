@@ -19,9 +19,10 @@ public class UsuarioDaoJbdc {
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if(resultSet.next()) {
+                String nome = resultSet.getString("nome");
                 String email1 = resultSet.getString("email");
                 String senha = resultSet.getString("senha");
-                usuario = new Usuario(email1, senha);
+                usuario = new Usuario(nome, email1, senha);
             }
         }
         return usuario;
@@ -30,11 +31,11 @@ public class UsuarioDaoJbdc {
     public boolean salvar(Usuario usuario) throws SQLException, IOException, ClassNotFoundException {
         try(Connection conn = new ConnectionFactory().getConnection()) {
             PreparedStatement preparedStatement = conn.prepareStatement(
-                    "INSERT INTO usuario (email, senha) VALUES (?, ?)"
+                    "INSERT INTO usuario (nome, email, senha) VALUES (?, ?, ?)"
             );
-
-            preparedStatement.setString(1, usuario.getEmail());
-            preparedStatement.setString(2, usuario.getSenha());
+            preparedStatement.setString(1, usuario.getNome());
+            preparedStatement.setString(2, usuario.getEmail());
+            preparedStatement.setString(3, usuario.getSenha());
             return preparedStatement.executeUpdate()>0;
         }
     }

@@ -7,6 +7,7 @@ import lombok.ToString;
 @Data @AllArgsConstructor @ToString
 public class Usuario {
 
+    private String nome;
     private String email;
     private String senha;
 }
