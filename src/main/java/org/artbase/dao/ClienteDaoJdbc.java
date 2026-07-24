@@ -62,6 +62,80 @@ public class ClienteDaoJdbc {
         return cliente;
     }
 
+    public Cliente atualizar(Cliente cliente) throws SQLException, IOException, ClassNotFoundException {
+        String sql = """
+                UPDATE cliente
+                    SET nome = ?, cpf = ?, telefone = ?, email = ?, endereco = ?
+                    WHERE id = ?
+                """;
+
+        try (Connection connection = new ConnectionFactory().getConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, cliente.getNome());
+            statement.setString(2, cliente.getCpf());
+            statement.setString(3, cliente.getTelefone());
+            statement.setString(4, cliente.getEmail());
+            statement.setString(5, cliente.getEndereco());
+            statement.setInt(6, cliente.getId());
+            statement.executeUpdate();
+        }
+        return cliente;
+    }
+
+    public boolean excluir(int id) throws SQLException, IOException, ClassNotFoundException {
+        String sql = "DELETE FROM cliente WHERE id = ?";
+
+        try (Connection connection = new ConnectionFactory().getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    public Cliente buscarPorId(int id) throws SQLException, IOException, ClassNotFoundException {
+        String sql = "SELECT id, nome, cpf, telefone, email, endereco FROM cliente WHERE id = ?";
+
+        try (Connection connection = new ConnectionFactory().getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return new Cliente(
+                            resultSet.getInt("id"),
+                            resultSet.getString("nome"),
+                            resultSet.getString("cpf"),
+                            resultSet.getString("telefone"),
+                            resultSet.getString("email"),
+                            resultSet.getString("endereco")
+                    );
+                }
+            }
+        }
+        return null;
+    }
+
+    public Cliente buscarPorCpf(String cpf) throws SQLException, IOException, ClassNotFoundException {
+        String sql = "SELECT id, nome, cpf, telefone, email, endereco FROM cliente WHERE cpf = ?";
+
+        try (Connection connection = new ConnectionFactory().getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, cpf);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return new Cliente(
+                            resultSet.getInt("id"),
+                            resultSet.getString("nome"),
+                            resultSet.getString("cpf"),
+                            resultSet.getString("telefone"),
+                            resultSet.getString("email"),
+                            resultSet.getString("endereco")
+                    );
+                }
+            }
+        }
+        return null;
+    }
+
     public List<Cliente> listarTodos() throws SQLException, IOException, ClassNotFoundException {
         List<Cliente> clientes = new ArrayList<>();
         String sql = "SELECT id, nome, cpf, telefone, email, endereco FROM cliente ORDER BY id DESC";
