@@ -5,6 +5,7 @@ import org.artbase.model.Cliente;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
@@ -16,6 +17,8 @@ public class TelaCadastroCliente extends JFrame {
     private static final Color FUNDO = new Color(243, 246, 250);
     private static final Color AZUL = new Color(37, 99, 235);
     private static final Color AZUL_ESCURO = new Color(29, 78, 216);
+    private static final Color SELECAO_LINHA = new Color(219, 234, 254);
+    private static final Color SELECAO_TEXTO = new Color(15, 23, 42);
     private static final Color CINZA_TEXTO = new Color(71, 85, 105);
     private static final Pattern EMAIL_VALIDO =
             Pattern.compile("^[\\w.!#$%&'*+/=?^`{|}~-]+@[\\w-]+(?:\\.[\\w-]+)+$");
@@ -120,6 +123,7 @@ public class TelaCadastroCliente extends JFrame {
 
         JScrollPane enderecoScroll = new JScrollPane(campoEndereco);
         enderecoScroll.setPreferredSize(new Dimension(0, 120));
+        enderecoScroll.setBorder(new LineBorder(new Color(203, 213, 225), 1, true));
         adicionarCampo(card, gbc, linha++, "Endereço completo *", enderecoScroll);
 
         JPanel botoes = new JPanel(new GridLayout(1, 2, 10, 0));
@@ -270,6 +274,8 @@ public class TelaCadastroCliente extends JFrame {
         tabelaClientes.setFillsViewportHeight(true);
         tabelaClientes.getTableHeader().setReorderingAllowed(false);
         tabelaClientes.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabelaClientes.setSelectionBackground(SELECAO_LINHA);
+        tabelaClientes.setSelectionForeground(SELECAO_TEXTO);
         tabelaClientes.setRowSorter(sorter);
         tabelaClientes.getSelectionModel().addListSelectionListener(event -> {
             if (!event.getValueIsAdjusting()) {
