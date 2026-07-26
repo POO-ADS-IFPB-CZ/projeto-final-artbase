@@ -48,12 +48,29 @@ public class TelaProduto extends JDialog {
     // permitir atualizar/remover); fica null quando nada está selecionado
     private Integer idSelecionado;
 
+    /**
+     * Construtor mantido por compatibilidade com código antigo que abria
+     * a tela sem informar o usuário logado.
+     */
     public TelaProduto() {
+        this("Usuário", true);
+    }
+
+    /**
+     * Construtor usado a partir do Painel/Clientes/Vendas, informando o
+     * nome do usuário logado (usado no menu de navegação). Só é possível
+     * chegar nesta tela sendo admin, mas o parâmetro é mantido para
+     * manter o menu de navegação consistente com as demais telas.
+     */
+    public TelaProduto(String nomeUsuario, boolean admin) {
         setTitle("ArtBase - Produtos");
         setContentPane(contentPane); // Usa o painel montado no .form
         setSize(650, 520);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
+
+        String nome = (nomeUsuario == null || nomeUsuario.isBlank()) ? "Usuário" : nomeUsuario;
+        setJMenuBar(NavegacaoUtil.criarMenuBar(this, nome, admin, NavegacaoUtil.Origem.PRODUTOS));
 
         configurarTabela();
         inicializarBanco();
@@ -253,6 +270,6 @@ public class TelaProduto extends JDialog {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new TelaProduto().setVisible(true));
+        SwingUtilities.invokeLater(() -> new TelaProduto("Usuário Teste", true).setVisible(true));
     }
 }

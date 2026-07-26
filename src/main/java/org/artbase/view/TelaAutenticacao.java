@@ -128,11 +128,13 @@ public class TelaAutenticacao extends JDialog {
                 return;
             }
 
-            // Login correto: fecha a tela de autenticação e abre a tela de Clientes,
-            // já informando se esse usuário tem ou não acesso à tela de Produtos.
+            // Login correto: fecha a tela de autenticação e abre o Painel (Dashboard),
+            // já informando o nome do usuário e se ele tem ou não acesso admin
+            // (Produtos e Vendas). A partir do Painel, o usuário consegue navegar
+            // para todas as outras telas do sistema.
             dispose();
             SwingUtilities.invokeLater(() ->
-                    new TelaCadastroCliente(usuario.isAdmin()).setVisible(true));
+                    new TelaDashboard(usuario.getNome(), usuario.isAdmin()).setVisible(true));
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,

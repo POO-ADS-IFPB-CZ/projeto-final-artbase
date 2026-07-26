@@ -49,12 +49,29 @@ public class TelaVenda extends JDialog {
     // Itens que já foram adicionados ao "carrinho" da venda atual
     private final List<ItemVenda> itensDaVendaAtual = new ArrayList<>();
 
+    /**
+     * Construtor mantido por compatibilidade com código antigo que abria
+     * a tela sem informar o usuário logado.
+     */
     public TelaVenda() {
+        this("Usuário", true);
+    }
+
+    /**
+     * Construtor usado a partir do Painel/Clientes/Produtos, informando o
+     * nome do usuário logado (usado no menu de navegação). Só é possível
+     * chegar nesta tela sendo admin, mas o parâmetro é mantido para
+     * manter o menu de navegação consistente com as demais telas.
+     */
+    public TelaVenda(String nomeUsuario, boolean admin) {
         setTitle("ArtBase - Registrar venda");
         setContentPane(contentPane);
         setSize(700, 560);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
+
+        String nome = (nomeUsuario == null || nomeUsuario.isBlank()) ? "Usuário" : nomeUsuario;
+        setJMenuBar(NavegacaoUtil.criarMenuBar(this, nome, admin, NavegacaoUtil.Origem.VENDAS));
 
         configurarTabelaItens();
         comboFormaPagamento.setModel(new DefaultComboBoxModel<>(
@@ -218,6 +235,6 @@ public class TelaVenda extends JDialog {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new TelaVenda().setVisible(true));
+        SwingUtilities.invokeLater(() -> new TelaVenda("Usuário Teste", true).setVisible(true));
     }
 }

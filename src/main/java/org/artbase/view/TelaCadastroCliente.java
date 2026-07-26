@@ -53,57 +53,45 @@ public class TelaCadastroCliente extends JFrame {
     // Define se o usuário logado é admin; controla o acesso à tela de Produtos
     private final boolean admin;
 
+    // Nome do usuário logado, usado no menu de navegação
+    private final String nomeUsuario;
+
     /**
      * Construtor padrão, usado quando não se sabe (ou não importa) se o
      * usuário é admin. Mantido para não quebrar quem já chamava
      * "new TelaCadastroCliente()" em outros pontos do código.
      */
     public TelaCadastroCliente() {
-        this(false);
+        this("Usuário", false);
     }
 
     /**
-     * Construtor usado pela TelaAutenticacao após um login bem-sucedido,
-     * informando se o usuário logado é admin ou não.
+     * Construtor mantido por compatibilidade com código antigo que só
+     * informava se o usuário é admin, sem o nome.
      */
     public TelaCadastroCliente(boolean admin) {
+        this("Usuário", admin);
+    }
+
+    /**
+     * Construtor usado pelo Painel/Autenticação após um login bem-sucedido,
+     * informando o nome do usuário logado e se ele é admin ou não.
+     */
+    public TelaCadastroCliente(String nomeUsuario, boolean admin) {
         super("ArtBase - Clientes");
+        this.nomeUsuario = (nomeUsuario == null || nomeUsuario.isBlank()) ? "Usuário" : nomeUsuario;
         this.admin = admin;
         configurarJanela();
         configurarAparencia();
         configurarAcoes();
         configurarTabela();
-        configurarAcessoAdmin();
+        setJMenuBar(NavegacaoUtil.criarMenuBar(this, this.nomeUsuario, admin, NavegacaoUtil.Origem.CLIENTES));
         inicializarBanco();
-    }
-
-    /**
-     * Se o usuário logado for admin, adiciona uma barra de menu simples
-     * com acesso à tela de cadastro de Produtos. Usuários comuns não
-     * veem esse menu, ficando restritos à gestão de Clientes.
-     */
-    private void configurarAcessoAdmin() {
-        if (!admin) {
-            return;
-        }
-        JMenuBar menuBar = new JMenuBar();
-        JMenu menuAdmin = new JMenu("Administração");
-
-        JMenuItem itemProdutos = new JMenuItem("Cadastrar produtos");
-        itemProdutos.addActionListener(event -> new TelaProduto().setVisible(true));
-
-        JMenuItem itemVendas = new JMenuItem("Registrar venda");
-        itemVendas.addActionListener(event -> new TelaVenda().setVisible(true));
-
-        menuAdmin.add(itemProdutos);
-        menuAdmin.add(itemVendas);
-        menuBar.add(menuAdmin);
-        setJMenuBar(menuBar);
     }
 
     private void configurarJanela() {
         setContentPane(contentPane);
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setMinimumSize(new Dimension(1180, 760));
         setSize(1280, 820);
         setLocationRelativeTo(null);
