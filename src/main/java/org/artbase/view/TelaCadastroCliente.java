@@ -50,13 +50,55 @@ public class TelaCadastroCliente extends JFrame {
     private final ClienteDaoJdbc clienteDao = new ClienteDaoJdbc();
     private Integer clienteEditandoId;
 
+    // Define se o usuário logado é admin; controla o acesso à tela de Produtos
+    private final boolean admin;
+
+    /**
+     * Construtor padrão, usado quando não se sabe (ou não importa) se o
+     * usuário é admin. Mantido para não quebrar quem já chamava
+     * "new TelaCadastroCliente()" em outros pontos do código.
+     */
     public TelaCadastroCliente() {
+        this(false);
+    }
+
+    /**
+     * Construtor usado pela TelaAutenticacao após um login bem-sucedido,
+     * informando se o usuário logado é admin ou não.
+     */
+    public TelaCadastroCliente(boolean admin) {
         super("ArtBase - Clientes");
+        this.admin = admin;
         configurarJanela();
         configurarAparencia();
         configurarAcoes();
         configurarTabela();
+        configurarAcessoAdmin();
         inicializarBanco();
+    }
+
+    /**
+     * Se o usuário logado for admin, adiciona uma barra de menu simples
+     * com acesso à tela de cadastro de Produtos. Usuários comuns não
+     * veem esse menu, ficando restritos à gestão de Clientes.
+     */
+    private void configurarAcessoAdmin() {
+        if (!admin) {
+            return;
+        }
+        JMenuBar menuBar = new JMenuBar();
+        JMenu menuAdmin = new JMenu("Administração");
+
+        JMenuItem itemProdutos = new JMenuItem("Cadastrar produtos");
+        itemProdutos.addActionListener(event -> new TelaProduto().setVisible(true));
+
+        JMenuItem itemVendas = new JMenuItem("Registrar venda");
+        itemVendas.addActionListener(event -> new TelaVenda().setVisible(true));
+
+        menuAdmin.add(itemProdutos);
+        menuAdmin.add(itemVendas);
+        menuBar.add(menuAdmin);
+        setJMenuBar(menuBar);
     }
 
     private void configurarJanela() {

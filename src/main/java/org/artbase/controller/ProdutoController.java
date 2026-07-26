@@ -20,18 +20,26 @@ public class ProdutoController {
     private final ProdutoDaoJdbc produtoDao = new ProdutoDaoJdbc();
 
     /**
+     * Garante que a tabela produto existe no banco. Deve ser chamado uma
+     * vez ao abrir a tela de produtos, antes de qualquer outra operação.
+     */
+    public void garantirTabela() throws SQLException, IOException, ClassNotFoundException {
+        produtoDao.criarTabelaSeNecessario();
+    }
+
+    /**
      * Cadastra um novo produto após validar os dados básicos.
      * Lança IllegalArgumentException caso alguma regra de negócio
-     * seja violada (nome vazio, preço ou estoque negativos), evitando
-     * que dados inválidos cheguem até o banco de dados.
+     * seja violada, evitando que dados inválidos cheguem até o banco.
      */
-    public boolean cadastrar(String nome, String descricao, double preco, int estoque)
+    public boolean cadastrar(String nome, String descricao, double preco,
+                              int quantidadeDisponivel, int estoqueMinimo, String categoria)
             throws SQLException, IOException, ClassNotFoundException {
 
-        validarDados(nome, preco, estoque);
+        validarDados(nome, preco, quantidadeDisponivel, estoqueMinimo);
 
-        // id = 0 pois ainda não existe no banco; será gerado pelo SERIAL do PostgreSQL
-        Produto produto = new Produto(0, nome, descricao, preco, estoque);
+        // id = null pois ainda não existe no banco; será gerado pela identity do PostgreSQL
+        Produto produto = new Produto(null, nome, descricao, preco, quantidadeDisponivel, estoqueMinimo, categoria);
         return produtoDao.salvar(produto);
     }
 
@@ -40,12 +48,13 @@ public class ProdutoController {
      * Também passa pelas mesmas validações do cadastro para garantir
      * que uma edição não deixe o produto em estado inconsistente.
      */
-    public boolean atualizar(int id, String nome, String descricao, double preco, int estoque)
+    public boolean atualizar(int id, String nome, String descricao, double preco,
+                              int quantidadeDisponivel, int estoqueMinimo, String categoria)
             throws SQLException, IOException, ClassNotFoundException {
 
-        validarDados(nome, preco, estoque);
+        validarDados(nome, preco, quantidadeDisponivel, estoqueMinimo);
 
-        Produto produto = new Produto(id, nome, descricao, preco, estoque);
+        Produto produto = new Produto(id, nome, descricao, preco, quantidadeDisponivel, estoqueMinimo, categoria);
         return produtoDao.atualizar(produto);
     }
 
@@ -80,15 +89,18 @@ public class ProdutoController {
      * Lança IllegalArgumentException com uma mensagem amigável, que a
      * View pode capturar e exibir diretamente ao usuário em um JOptionPane.
      */
-    private void validarDados(String nome, double preco, int estoque) {
+    private void validarDados(String nome, double preco, int quantidadeDisponivel, int estoqueMinimo) {
         if (nome == null || nome.trim().isEmpty()) {
             throw new IllegalArgumentException("O nome do produto não pode ser vazio.");
         }
         if (preco < 0) {
             throw new IllegalArgumentException("O preço do produto não pode ser negativo.");
         }
-        if (estoque < 0) {
-            throw new IllegalArgumentException("O estoque do produto não pode ser negativo.");
+        if (quantidadeDisponivel < 0) {
+            throw new IllegalArgumentException("A quantidade disponível não pode ser negativa.");
+        }
+        if (estoqueMinimo < 0) {
+            throw new IllegalArgumentException("O estoque mínimo não pode ser negativo.");
         }
     }
 }
