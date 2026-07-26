@@ -8,7 +8,6 @@ import org.artbase.model.Produto;
 import org.artbase.model.Venda;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
@@ -28,13 +27,9 @@ import java.util.Locale;
  */
 public class TelaDashboard extends JFrame {
 
-    private static final Color FUNDO = new Color(243, 246, 250);
-    private static final Color AZUL = new Color(37, 99, 235);
     private static final Color VERDE = new Color(22, 163, 74);
     private static final Color LARANJA = new Color(217, 119, 6);
     private static final Color ROXO = new Color(124, 58, 237);
-    private static final Color CINZA_TEXTO = new Color(71, 85, 105);
-    private static final Color BORDA = new Color(226, 232, 240);
     private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final String nomeUsuario;
@@ -70,9 +65,7 @@ public class TelaDashboard extends JFrame {
     }
 
     private void montarInterface() {
-        JPanel raiz = new JPanel(new BorderLayout(0, 18));
-        raiz.setBackground(FUNDO);
-        raiz.setBorder(new EmptyBorder(24, 28, 24, 28));
+        JPanel raiz = EstiloTelaPadrao.criarPainelRaiz();
         setContentPane(raiz);
 
         raiz.add(montarCabecalho(), BorderLayout.NORTH);
@@ -94,7 +87,7 @@ public class TelaDashboard extends JFrame {
         raiz.add(scroll, BorderLayout.CENTER);
 
         labelStatus = new JLabel(" ");
-        labelStatus.setForeground(CINZA_TEXTO);
+        labelStatus.setForeground(EstiloTelaPadrao.TEXTO_SUAVE);
         raiz.add(labelStatus, BorderLayout.SOUTH);
     }
 
@@ -102,21 +95,11 @@ public class TelaDashboard extends JFrame {
         JPanel cabecalho = new JPanel(new BorderLayout());
         cabecalho.setOpaque(false);
 
-        JLabel titulo = new JLabel("Painel geral");
-        titulo.setFont(new Font("SansSerif", Font.BOLD, 28));
-        titulo.setForeground(new Color(15, 23, 42));
-
         String perfil = admin ? "Administrador" : "Usuário";
-        JLabel subtitulo = new JLabel("Bem-vindo(a), " + nomeUsuario + " · Perfil: " + perfil);
-        subtitulo.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        subtitulo.setForeground(CINZA_TEXTO);
-
-        JPanel textos = new JPanel(new GridLayout(2, 1, 0, 4));
-        textos.setOpaque(false);
-        textos.add(titulo);
-        textos.add(subtitulo);
-
-        cabecalho.add(textos, BorderLayout.WEST);
+        cabecalho.add(EstiloTelaPadrao.criarCabecalho(
+                "Painel geral",
+                "Bem-vindo(a), " + nomeUsuario + " · Perfil: " + perfil
+        ), BorderLayout.WEST);
         return cabecalho;
     }
 
@@ -131,7 +114,7 @@ public class TelaDashboard extends JFrame {
         labelTotalVendas = new JLabel("--");
         labelFaturamento = new JLabel("--");
 
-        painel.add(criarCartao("Clientes cadastrados", labelTotalClientes, AZUL));
+        painel.add(criarCartao("Clientes cadastrados", labelTotalClientes, EstiloTelaPadrao.AZUL));
         painel.add(criarCartao("Produtos cadastrados", labelTotalProdutos, ROXO));
         painel.add(criarCartao("Vendas realizadas", labelTotalVendas, VERDE));
         painel.add(criarCartao("Faturamento total", labelFaturamento, LARANJA));
@@ -140,12 +123,7 @@ public class TelaDashboard extends JFrame {
     }
 
     private JPanel criarCartao(String titulo, JLabel valorLabel, Color destaque) {
-        JPanel card = new JPanel(new BorderLayout(0, 8));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDA),
-                new EmptyBorder(16, 18, 16, 18)
-        ));
+        JPanel card = EstiloTelaPadrao.criarCard(new BorderLayout(0, 8));
 
         JPanel faixa = new JPanel();
         faixa.setBackground(destaque);
@@ -153,10 +131,10 @@ public class TelaDashboard extends JFrame {
 
         JLabel labelTitulo = new JLabel(titulo);
         labelTitulo.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        labelTitulo.setForeground(CINZA_TEXTO);
+        labelTitulo.setForeground(EstiloTelaPadrao.TEXTO_SUAVE);
 
         valorLabel.setFont(new Font("SansSerif", Font.BOLD, 26));
-        valorLabel.setForeground(new Color(15, 23, 42));
+        valorLabel.setForeground(EstiloTelaPadrao.TEXTO);
 
         JPanel textoWrapper = new JPanel(new BorderLayout());
         textoWrapper.setOpaque(false);
@@ -172,7 +150,7 @@ public class TelaDashboard extends JFrame {
         JPanel painel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         painel.setOpaque(false);
 
-        JButton btnClientes = criarBotaoAtalho("Gerenciar clientes", AZUL);
+        JButton btnClientes = criarBotaoAtalho("Gerenciar clientes", EstiloTelaPadrao.AZUL);
         btnClientes.addActionListener(e -> {
             dispose();
             SwingUtilities.invokeLater(() -> new TelaCadastroCliente(nomeUsuario, admin).setVisible(true));
@@ -204,14 +182,8 @@ public class TelaDashboard extends JFrame {
 
     private JButton criarBotaoAtalho(String texto, Color cor) {
         JButton botao = new JButton(texto);
+        EstiloTelaPadrao.estilizarBotaoPrimario(botao);
         botao.setBackground(cor);
-        botao.setForeground(Color.WHITE);
-        botao.setFocusPainted(false);
-        botao.setBorderPainted(false);
-        botao.setOpaque(true);
-        botao.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        botao.setFont(new Font("SansSerif", Font.BOLD, 13));
-        botao.setBorder(new EmptyBorder(10, 18, 10, 18));
         return botao;
     }
 
@@ -243,24 +215,18 @@ public class TelaDashboard extends JFrame {
     }
 
     private JPanel criarCardTabela(String titulo, DefaultTableModel modelo) {
-        JPanel card = new JPanel(new BorderLayout(0, 10));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDA),
-                new EmptyBorder(16, 18, 16, 18)
-        ));
+        JPanel card = EstiloTelaPadrao.criarCard(new BorderLayout(0, 10));
 
         JLabel labelTitulo = new JLabel(titulo);
         labelTitulo.setFont(new Font("SansSerif", Font.BOLD, 15));
-        labelTitulo.setForeground(new Color(15, 23, 42));
+        labelTitulo.setForeground(EstiloTelaPadrao.TEXTO);
 
         JTable tabela = new JTable(modelo);
+        EstiloTelaPadrao.estilizarTabela(tabela);
         tabela.setRowHeight(26);
-        tabela.setFillsViewportHeight(true);
-        tabela.getTableHeader().setReorderingAllowed(false);
 
         card.add(labelTitulo, BorderLayout.NORTH);
-        card.add(new JScrollPane(tabela), BorderLayout.CENTER);
+        card.add(EstiloTelaPadrao.criarScroll(tabela), BorderLayout.CENTER);
         return card;
     }
 

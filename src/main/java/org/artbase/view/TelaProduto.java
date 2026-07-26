@@ -5,98 +5,148 @@ import org.artbase.model.Produto;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.util.List;
 
-/**
- * Tela responsável pelo CRUD visual de Produtos.
- * Os componentes (campos de texto, botões e tabela) vêm do arquivo
- * TelaProduto.form, montado pelo GUI Designer do IntelliJ, e são
- * automaticamente injetados nos campos abaixo através do binding do
- * próprio .form. Toda a lógica de negócio fica no ProdutoController;
- * esta classe só cuida de exibir dados e reagir aos cliques do usuário.
- */
 public class TelaProduto extends JDialog {
+    private final ProdutoController controller = new ProdutoController();
+    private final String nomeUsuario;
+    private final boolean admin;
 
-    // Painel raiz, obrigatório para o setContentPane funcionar (vem do .form)
-    private JPanel contentPane;
-
-    // Campos de entrada de dados do produto
-    private JTextField textFieldNome;
-    private JTextField textFieldDescricao;
-    private JTextField textFieldPreco;
-    private JTextField textFieldQuantidadeDisponivel;
-    private JTextField textFieldEstoqueMinimo;
-    private JTextField textFieldCategoria;
-
-    // Painel que agrupa os botões de ação
-    private JPanel painelBotoes;
+    private JTextField campoNome;
+    private JTextArea campoDescricao;
+    private JTextField campoPreco;
+    private JTextField campoQuantidadeDisponivel;
+    private JTextField campoEstoqueMinimo;
+    private JTextField campoCategoria;
     private JButton btnCadastrar;
     private JButton btnAtualizar;
     private JButton btnRemover;
     private JButton btnLimpar;
-
-    // Tabela que lista os produtos cadastrados
+    private JLabel statusLabel;
     private JTable tabelaProdutos;
-
-    // Controller responsável pelas regras de negócio e acesso ao banco
-    private final ProdutoController controller = new ProdutoController();
-
-    // Modelo da tabela, usado para popular e limpar as linhas exibidas
     private DefaultTableModel tableModel;
-
-    // Guarda o id do produto atualmente selecionado na tabela (para
-    // permitir atualizar/remover); fica null quando nada está selecionado
     private Integer idSelecionado;
 
-    /**
-     * Construtor mantido por compatibilidade com código antigo que abria
-     * a tela sem informar o usuário logado.
-     */
     public TelaProduto() {
         this("Usuário", true);
     }
 
-    /**
-     * Construtor usado a partir do Painel/Clientes/Vendas, informando o
-     * nome do usuário logado (usado no menu de navegação). Só é possível
-     * chegar nesta tela sendo admin, mas o parâmetro é mantido para
-     * manter o menu de navegação consistente com as demais telas.
-     */
     public TelaProduto(String nomeUsuario, boolean admin) {
-        setTitle("ArtBase - Produtos");
-        setContentPane(contentPane); // Usa o painel montado no .form
-        setSize(650, 520);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
+        this.nomeUsuario = (nomeUsuario == null || nomeUsuario.isBlank()) ? "Usuário" : nomeUsuario;
+        this.admin = admin;
 
-        String nome = (nomeUsuario == null || nomeUsuario.isBlank()) ? "Usuário" : nomeUsuario;
-        setJMenuBar(NavegacaoUtil.criarMenuBar(this, nome, admin, NavegacaoUtil.Origem.PRODUTOS));
+        setTitle("ArtBase - Produtos");
+        setContentPane(montarInterface());
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setMinimumSize(new Dimension(1180, 760));
+        setSize(1280, 820);
+        setLocationRelativeTo(null);
+        setJMenuBar(NavegacaoUtil.criarMenuBar(this, this.nomeUsuario, admin, NavegacaoUtil.Origem.PRODUTOS));
 
         configurarTabela();
+        configurarAcoes();
         inicializarBanco();
-
-        // Ao clicar em uma linha da tabela, preenche os campos com os
-        // dados daquele produto, permitindo editar ou remover
-        tabelaProdutos.getSelectionModel().addListSelectionListener(e -> {
-            int linha = tabelaProdutos.getSelectedRow();
-            if (linha >= 0) {
-                preencherCamposComLinhaSelecionada(linha);
-            }
-        });
-
-        btnCadastrar.addActionListener(e -> cadastrarProduto());
-        btnAtualizar.addActionListener(e -> atualizarProduto());
-        btnRemover.addActionListener(e -> removerProduto());
-        btnLimpar.addActionListener(e -> limparCampos());
     }
 
-    /**
-     * Define as colunas da tabela e associa o modelo a ela.
-     * Usa um DefaultTableModel "somente leitura" (isCellEditable retorna
-     * false) para impedir que o usuário edite os valores direto na
-     * tabela; toda edição deve passar pelos campos de texto e pelo
-     * botão Atualizar.
-     */
+    private JPanel montarInterface() {
+        JPanel raiz = EstiloTelaPadrao.criarPainelRaiz();
+        raiz.add(EstiloTelaPadrao.criarCabecalho(
+                "Cadastro de produtos",
+                "Gerencie o estoque com o mesmo padrão visual aplicado à base de clientes."
+        ), BorderLayout.NORTH);
+
+        JPanel corpo = new JPanel(new GridLayout(1, 2, 18, 0));
+        corpo.setOpaque(false);
+        corpo.add(montarFormulario());
+        corpo.add(montarLista());
+        raiz.add(corpo, BorderLayout.CENTER);
+
+        statusLabel = new JLabel(" ");
+        statusLabel.setForeground(EstiloTelaPadrao.TEXTO_SUAVE);
+        raiz.add(statusLabel, BorderLayout.SOUTH);
+        return raiz;
+    }
+
+    private JPanel montarFormulario() {
+        JPanel card = EstiloTelaPadrao.criarCard(new BorderLayout(0, 16));
+
+        JPanel campos = new JPanel(new GridBagLayout());
+        campos.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 0, 12, 0);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+
+        campoNome = new JTextField();
+        campoDescricao = new JTextArea(4, 20);
+        campoPreco = new JTextField();
+        campoQuantidadeDisponivel = new JTextField();
+        campoEstoqueMinimo = new JTextField();
+        campoCategoria = new JTextField();
+
+        EstiloTelaPadrao.estilizarCampo(campoNome);
+        EstiloTelaPadrao.estilizarArea(campoDescricao);
+        EstiloTelaPadrao.estilizarCampo(campoPreco);
+        EstiloTelaPadrao.estilizarCampo(campoQuantidadeDisponivel);
+        EstiloTelaPadrao.estilizarCampo(campoEstoqueMinimo);
+        EstiloTelaPadrao.estilizarCampo(campoCategoria);
+
+        adicionarCampo(campos, gbc, "Nome do produto", campoNome);
+        adicionarCampo(campos, gbc, "Descrição", EstiloTelaPadrao.criarScroll(campoDescricao));
+        adicionarCampo(campos, gbc, "Preço", campoPreco);
+        adicionarCampo(campos, gbc, "Quantidade disponível", campoQuantidadeDisponivel);
+        adicionarCampo(campos, gbc, "Estoque mínimo", campoEstoqueMinimo);
+        adicionarCampo(campos, gbc, "Categoria", campoCategoria);
+
+        JPanel botoes = new JPanel(new GridLayout(1, 4, 10, 0));
+        botoes.setOpaque(false);
+        btnCadastrar = new JButton("Cadastrar");
+        btnAtualizar = new JButton("Atualizar");
+        btnRemover = new JButton("Remover");
+        btnLimpar = new JButton("Limpar");
+        EstiloTelaPadrao.estilizarBotaoPrimario(btnCadastrar);
+        EstiloTelaPadrao.estilizarBotaoSecundario(btnAtualizar);
+        EstiloTelaPadrao.estilizarBotaoPerigoso(btnRemover);
+        EstiloTelaPadrao.estilizarBotaoSecundario(btnLimpar);
+        botoes.add(btnCadastrar);
+        botoes.add(btnAtualizar);
+        botoes.add(btnRemover);
+        botoes.add(btnLimpar);
+
+        card.add(campos, BorderLayout.CENTER);
+        card.add(botoes, BorderLayout.SOUTH);
+        return card;
+    }
+
+    private JPanel montarLista() {
+        JPanel card = EstiloTelaPadrao.criarCard(new BorderLayout(0, 12));
+        JLabel titulo = EstiloTelaPadrao.criarSubtitulo("Produtos cadastrados");
+        titulo.setForeground(EstiloTelaPadrao.TEXTO);
+        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 16f));
+
+        tabelaProdutos = new JTable();
+        card.add(titulo, BorderLayout.NORTH);
+        card.add(EstiloTelaPadrao.criarScroll(tabelaProdutos), BorderLayout.CENTER);
+        return card;
+    }
+
+    private void adicionarCampo(JPanel painel, GridBagConstraints gbc, String rotulo, Component campo) {
+        JLabel label = new JLabel(rotulo);
+        label.setForeground(EstiloTelaPadrao.TEXTO_SUAVE);
+        label.setFont(new Font("SansSerif", Font.BOLD, 12));
+
+        JPanel bloco = new JPanel(new BorderLayout(0, 6));
+        bloco.setOpaque(false);
+        bloco.add(label, BorderLayout.NORTH);
+        bloco.add(campo, BorderLayout.CENTER);
+
+        painel.add(bloco, gbc);
+        gbc.gridy++;
+    }
+
     private void configurarTabela() {
         tableModel = new DefaultTableModel(
                 new Object[]{"Id", "Nome", "Descrição", "Preço", "Qtd. disponível", "Estoque mínimo", "Categoria"}, 0) {
@@ -106,34 +156,38 @@ public class TelaProduto extends JDialog {
             }
         };
         tabelaProdutos.setModel(tableModel);
+        EstiloTelaPadrao.estilizarTabela(tabelaProdutos);
+        tabelaProdutos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabelaProdutos.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int linha = tabelaProdutos.getSelectedRow();
+                if (linha >= 0) {
+                    preencherCamposComLinhaSelecionada(linha);
+                }
+            }
+        });
     }
 
-    /**
-     * Garante que a tabela produto existe no banco (criando-a se for a
-     * primeira execução) e já carrega a lista de produtos em seguida.
-     * Sem essa chamada, qualquer operação com o banco falharia com o
-     * erro "relation produto does not exist".
-     */
+    private void configurarAcoes() {
+        btnCadastrar.addActionListener(e -> cadastrarProduto());
+        btnAtualizar.addActionListener(e -> atualizarProduto());
+        btnRemover.addActionListener(e -> removerProduto());
+        btnLimpar.addActionListener(e -> limparCampos());
+    }
+
     private void inicializarBanco() {
         try {
             controller.garantirTabela();
             carregarProdutos();
+            mostrarStatus("Sistema pronto para gerenciar produtos.", false);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Erro ao preparar o banco de dados: " + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
+            mostrarStatus("Erro ao preparar o banco de dados: " + ex.getMessage(), true);
         }
     }
 
-    /**
-     * Busca todos os produtos no banco através do Controller e recarrega
-     * as linhas da tabela. Chamado na abertura da tela e sempre que um
-     * cadastro, atualização ou remoção é concluído, para manter a lista
-     * sincronizada com o banco de dados.
-     */
     private void carregarProdutos() {
         try {
-            tableModel.setRowCount(0); // Limpa as linhas antes de repopular
+            tableModel.setRowCount(0);
             List<Produto> produtos = controller.listarTodos();
             for (Produto p : produtos) {
                 tableModel.addRow(new Object[]{
@@ -142,131 +196,103 @@ public class TelaProduto extends JDialog {
                 });
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Erro ao carregar produtos: " + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
+            mostrarStatus("Erro ao carregar produtos: " + ex.getMessage(), true);
         }
     }
 
-    /**
-     * Lê os dados da linha clicada na tabela e preenche os campos de
-     * texto com eles, além de guardar o id do produto selecionado.
-     */
     private void preencherCamposComLinhaSelecionada(int linha) {
-        idSelecionado = (Integer) tableModel.getValueAt(linha, 0);
-        textFieldNome.setText(String.valueOf(tableModel.getValueAt(linha, 1)));
-        textFieldDescricao.setText(String.valueOf(tableModel.getValueAt(linha, 2)));
-        textFieldPreco.setText(String.valueOf(tableModel.getValueAt(linha, 3)));
-        textFieldQuantidadeDisponivel.setText(String.valueOf(tableModel.getValueAt(linha, 4)));
-        textFieldEstoqueMinimo.setText(String.valueOf(tableModel.getValueAt(linha, 5)));
-        textFieldCategoria.setText(String.valueOf(tableModel.getValueAt(linha, 6)));
+        int modelRow = tabelaProdutos.convertRowIndexToModel(linha);
+        idSelecionado = (Integer) tableModel.getValueAt(modelRow, 0);
+        campoNome.setText(String.valueOf(tableModel.getValueAt(modelRow, 1)));
+        campoDescricao.setText(String.valueOf(tableModel.getValueAt(modelRow, 2)));
+        campoPreco.setText(String.valueOf(tableModel.getValueAt(modelRow, 3)));
+        campoQuantidadeDisponivel.setText(String.valueOf(tableModel.getValueAt(modelRow, 4)));
+        campoEstoqueMinimo.setText(String.valueOf(tableModel.getValueAt(modelRow, 5)));
+        campoCategoria.setText(String.valueOf(tableModel.getValueAt(modelRow, 6)));
+        mostrarStatus("Produto selecionado para edição.", false);
     }
 
-    /**
-     * Lê os campos de texto, converte para os tipos corretos e chama o
-     * Controller para cadastrar um novo produto. Qualquer erro de
-     * validação (vindo do Controller) ou de conversão de número é
-     * exibido ao usuário em um JOptionPane, sem derrubar a aplicação.
-     */
     private void cadastrarProduto() {
         try {
-            double preco = Double.parseDouble(textFieldPreco.getText().replace(",", "."));
-            int quantidadeDisponivel = Integer.parseInt(textFieldQuantidadeDisponivel.getText());
-            int estoqueMinimo = Integer.parseInt(textFieldEstoqueMinimo.getText());
+            double preco = Double.parseDouble(campoPreco.getText().trim().replace(",", "."));
+            int quantidadeDisponivel = Integer.parseInt(campoQuantidadeDisponivel.getText().trim());
+            int estoqueMinimo = Integer.parseInt(campoEstoqueMinimo.getText().trim());
 
-            controller.cadastrar(textFieldNome.getText(), textFieldDescricao.getText(), preco,
-                    quantidadeDisponivel, estoqueMinimo, textFieldCategoria.getText());
-
-            JOptionPane.showMessageDialog(this, "Produto cadastrado com sucesso!");
-            limparCampos();
+            controller.cadastrar(campoNome.getText().trim(), campoDescricao.getText().trim(), preco,
+                    quantidadeDisponivel, estoqueMinimo, campoCategoria.getText().trim());
             carregarProdutos();
+            limparCampos();
+            mostrarStatus("Produto cadastrado com sucesso.", false);
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Preço, quantidade disponível e estoque mínimo devem ser números válidos.",
-                    "Dados inválidos", JOptionPane.WARNING_MESSAGE);
+            mostrarStatus("Preço, quantidade disponível e estoque mínimo devem ser números válidos.", true);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Erro ao cadastrar produto: " + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
+            mostrarStatus("Erro ao cadastrar produto: " + ex.getMessage(), true);
         }
     }
 
-    /**
-     * Atualiza o produto atualmente selecionado na tabela com os novos
-     * valores digitados nos campos. Exige que um produto tenha sido
-     * selecionado antes (idSelecionado != null).
-     */
     private void atualizarProduto() {
         if (idSelecionado == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Selecione um produto na tabela para atualizar.",
-                    "Nenhum produto selecionado", JOptionPane.WARNING_MESSAGE);
+            mostrarStatus("Selecione um produto para atualizar.", true);
             return;
         }
         try {
-            double preco = Double.parseDouble(textFieldPreco.getText().replace(",", "."));
-            int quantidadeDisponivel = Integer.parseInt(textFieldQuantidadeDisponivel.getText());
-            int estoqueMinimo = Integer.parseInt(textFieldEstoqueMinimo.getText());
+            double preco = Double.parseDouble(campoPreco.getText().trim().replace(",", "."));
+            int quantidadeDisponivel = Integer.parseInt(campoQuantidadeDisponivel.getText().trim());
+            int estoqueMinimo = Integer.parseInt(campoEstoqueMinimo.getText().trim());
 
-            controller.atualizar(idSelecionado, textFieldNome.getText(), textFieldDescricao.getText(), preco,
-                    quantidadeDisponivel, estoqueMinimo, textFieldCategoria.getText());
-
-            JOptionPane.showMessageDialog(this, "Produto atualizado com sucesso!");
-            limparCampos();
+            controller.atualizar(idSelecionado, campoNome.getText().trim(), campoDescricao.getText().trim(), preco,
+                    quantidadeDisponivel, estoqueMinimo, campoCategoria.getText().trim());
             carregarProdutos();
+            limparCampos();
+            mostrarStatus("Produto atualizado com sucesso.", false);
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Preço, quantidade disponível e estoque mínimo devem ser números válidos.",
-                    "Dados inválidos", JOptionPane.WARNING_MESSAGE);
+            mostrarStatus("Preço, quantidade disponível e estoque mínimo devem ser números válidos.", true);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Erro ao atualizar produto: " + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
+            mostrarStatus("Erro ao atualizar produto: " + ex.getMessage(), true);
         }
     }
 
-    /**
-     * Remove o produto atualmente selecionado na tabela, após confirmar
-     * a ação com o usuário para evitar exclusões acidentais.
-     */
     private void removerProduto() {
         if (idSelecionado == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Selecione um produto na tabela para remover.",
-                    "Nenhum produto selecionado", JOptionPane.WARNING_MESSAGE);
+            mostrarStatus("Selecione um produto para remover.", true);
             return;
         }
-        int confirmacao = JOptionPane.showConfirmDialog(this,
-                "Tem certeza que deseja remover este produto?",
-                "Confirmar remoção", JOptionPane.YES_NO_OPTION);
 
-        if (confirmacao == JOptionPane.YES_OPTION) {
-            try {
-                controller.remover(idSelecionado);
-                JOptionPane.showMessageDialog(this, "Produto removido com sucesso!");
-                limparCampos();
-                carregarProdutos();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this,
-                        "Erro ao remover produto: " + ex.getMessage(),
-                        "Erro", JOptionPane.ERROR_MESSAGE);
-            }
+        int confirmacao = JOptionPane.showConfirmDialog(
+                this,
+                "Tem certeza que deseja remover este produto?",
+                "Confirmar remoção",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (confirmacao != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try {
+            controller.remover(idSelecionado);
+            carregarProdutos();
+            limparCampos();
+            mostrarStatus("Produto removido com sucesso.", false);
+        } catch (Exception ex) {
+            mostrarStatus("Erro ao remover produto: " + ex.getMessage(), true);
         }
     }
 
-    /**
-     * Limpa todos os campos de texto e desmarca o produto selecionado,
-     * deixando a tela pronta para um novo cadastro.
-     */
     private void limparCampos() {
-        textFieldNome.setText("");
-        textFieldDescricao.setText("");
-        textFieldPreco.setText("");
-        textFieldQuantidadeDisponivel.setText("");
-        textFieldEstoqueMinimo.setText("");
-        textFieldCategoria.setText("");
+        campoNome.setText("");
+        campoDescricao.setText("");
+        campoPreco.setText("");
+        campoQuantidadeDisponivel.setText("");
+        campoEstoqueMinimo.setText("");
+        campoCategoria.setText("");
         idSelecionado = null;
         tabelaProdutos.clearSelection();
+    }
+
+    private void mostrarStatus(String mensagem, boolean erro) {
+        statusLabel.setForeground(erro ? EstiloTelaPadrao.ERRO : EstiloTelaPadrao.SUCESSO);
+        statusLabel.setText("<html>" + mensagem + "</html>");
     }
 
     public static void main(String[] args) {
