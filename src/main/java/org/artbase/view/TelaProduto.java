@@ -12,8 +12,7 @@ import java.util.List;
  * Os componentes (campos de texto, botões e tabela) vêm do arquivo
  * TelaProduto.form, montado pelo GUI Designer do IntelliJ, e são
  * automaticamente injetados nos campos abaixo através do binding do
- * próprio .form (por isso os campos não têm "new" nem inicialização
- * manual aqui). Toda a lógica de negócio fica no ProdutoController;
+ * próprio .form. Toda a lógica de negócio fica no ProdutoController;
  * esta classe só cuida de exibir dados e reagir aos cliques do usuário.
  */
 public class TelaProduto extends JDialog {
@@ -25,7 +24,9 @@ public class TelaProduto extends JDialog {
     private JTextField textFieldNome;
     private JTextField textFieldDescricao;
     private JTextField textFieldPreco;
-    private JTextField textFieldEstoque;
+    private JTextField textFieldQuantidadeDisponivel;
+    private JTextField textFieldEstoqueMinimo;
+    private JTextField textFieldCategoria;
 
     // Painel que agrupa os botões de ação
     private JPanel painelBotoes;
@@ -50,12 +51,12 @@ public class TelaProduto extends JDialog {
     public TelaProduto() {
         setTitle("ArtBase - Produtos");
         setContentPane(contentPane); // Usa o painel montado no .form
-        setSize(650, 450);
+        setSize(650, 520);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
         configurarTabela();
-        carregarProdutos();
+        inicializarBanco();
 
         // Ao clicar em uma linha da tabela, preenche os campos com os
         // dados daquele produto, permitindo editar ou remover
@@ -80,13 +81,31 @@ public class TelaProduto extends JDialog {
      * botão Atualizar.
      */
     private void configurarTabela() {
-        tableModel = new DefaultTableModel(new Object[]{"Id", "Nome", "Descrição", "Preço", "Estoque"}, 0) {
+        tableModel = new DefaultTableModel(
+                new Object[]{"Id", "Nome", "Descrição", "Preço", "Qtd. disponível", "Estoque mínimo", "Categoria"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
         tabelaProdutos.setModel(tableModel);
+    }
+
+    /**
+     * Garante que a tabela produto existe no banco (criando-a se for a
+     * primeira execução) e já carrega a lista de produtos em seguida.
+     * Sem essa chamada, qualquer operação com o banco falharia com o
+     * erro "relation produto does not exist".
+     */
+    private void inicializarBanco() {
+        try {
+            controller.garantirTabela();
+            carregarProdutos();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao preparar o banco de dados: " + ex.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -101,7 +120,8 @@ public class TelaProduto extends JDialog {
             List<Produto> produtos = controller.listarTodos();
             for (Produto p : produtos) {
                 tableModel.addRow(new Object[]{
-                        p.getId(), p.getNome(), p.getDescricao(), p.getPreco(), p.getEstoque()
+                        p.getId(), p.getNome(), p.getDescricao(), p.getPreco(),
+                        p.getQuantidadeDisponivel(), p.getEstoqueMinimo(), p.getCategoria()
                 });
             }
         } catch (Exception ex) {
@@ -120,7 +140,9 @@ public class TelaProduto extends JDialog {
         textFieldNome.setText(String.valueOf(tableModel.getValueAt(linha, 1)));
         textFieldDescricao.setText(String.valueOf(tableModel.getValueAt(linha, 2)));
         textFieldPreco.setText(String.valueOf(tableModel.getValueAt(linha, 3)));
-        textFieldEstoque.setText(String.valueOf(tableModel.getValueAt(linha, 4)));
+        textFieldQuantidadeDisponivel.setText(String.valueOf(tableModel.getValueAt(linha, 4)));
+        textFieldEstoqueMinimo.setText(String.valueOf(tableModel.getValueAt(linha, 5)));
+        textFieldCategoria.setText(String.valueOf(tableModel.getValueAt(linha, 6)));
     }
 
     /**
@@ -132,16 +154,18 @@ public class TelaProduto extends JDialog {
     private void cadastrarProduto() {
         try {
             double preco = Double.parseDouble(textFieldPreco.getText().replace(",", "."));
-            int estoque = Integer.parseInt(textFieldEstoque.getText());
+            int quantidadeDisponivel = Integer.parseInt(textFieldQuantidadeDisponivel.getText());
+            int estoqueMinimo = Integer.parseInt(textFieldEstoqueMinimo.getText());
 
-            controller.cadastrar(textFieldNome.getText(), textFieldDescricao.getText(), preco, estoque);
+            controller.cadastrar(textFieldNome.getText(), textFieldDescricao.getText(), preco,
+                    quantidadeDisponivel, estoqueMinimo, textFieldCategoria.getText());
 
             JOptionPane.showMessageDialog(this, "Produto cadastrado com sucesso!");
             limparCampos();
             carregarProdutos();
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this,
-                    "Preço e estoque devem ser números válidos.",
+                    "Preço, quantidade disponível e estoque mínimo devem ser números válidos.",
                     "Dados inválidos", JOptionPane.WARNING_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
@@ -164,16 +188,18 @@ public class TelaProduto extends JDialog {
         }
         try {
             double preco = Double.parseDouble(textFieldPreco.getText().replace(",", "."));
-            int estoque = Integer.parseInt(textFieldEstoque.getText());
+            int quantidadeDisponivel = Integer.parseInt(textFieldQuantidadeDisponivel.getText());
+            int estoqueMinimo = Integer.parseInt(textFieldEstoqueMinimo.getText());
 
-            controller.atualizar(idSelecionado, textFieldNome.getText(), textFieldDescricao.getText(), preco, estoque);
+            controller.atualizar(idSelecionado, textFieldNome.getText(), textFieldDescricao.getText(), preco,
+                    quantidadeDisponivel, estoqueMinimo, textFieldCategoria.getText());
 
             JOptionPane.showMessageDialog(this, "Produto atualizado com sucesso!");
             limparCampos();
             carregarProdutos();
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this,
-                    "Preço e estoque devem ser números válidos.",
+                    "Preço, quantidade disponível e estoque mínimo devem ser números válidos.",
                     "Dados inválidos", JOptionPane.WARNING_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
@@ -219,7 +245,9 @@ public class TelaProduto extends JDialog {
         textFieldNome.setText("");
         textFieldDescricao.setText("");
         textFieldPreco.setText("");
-        textFieldEstoque.setText("");
+        textFieldQuantidadeDisponivel.setText("");
+        textFieldEstoqueMinimo.setText("");
+        textFieldCategoria.setText("");
         idSelecionado = null;
         tabelaProdutos.clearSelection();
     }

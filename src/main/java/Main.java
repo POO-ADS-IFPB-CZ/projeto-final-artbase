@@ -1,19 +1,15 @@
-
-
-import org.artbase.view.TelaCadastroCliente;
+import org.artbase.view.TelaAutenticacao;
 
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 
+/**
+ * Ponto de entrada da aplicação ArtBase.
+ * Sempre abre primeiro a tela de autenticação (login/registro). Só depois
+ * de um login bem-sucedido é que o sistema segue para a tela de Clientes
+ * e, no caso de usuários admin, dá acesso também à tela de Produtos.
+ */
 public class Main {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {
-                // Mantém o tema padrão do Swing caso o tema do sistema não esteja disponível.
-            }
-            new TelaCadastroCliente().setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new TelaAutenticacao().setVisible(true));
     }
 }
